@@ -7,6 +7,9 @@ from inspect import isawaitable
 from typing import Any, Callable, List, Optional, Text, Union
 
 import datetime
+import time
+
+from numba import jit
 from sanic import Sanic, response
 from sanic.request import Request
 from sanic_cors import CORS
@@ -273,6 +276,25 @@ async def _load_agent(
         )
 
     return loaded_agent
+
+
+# @staticmethod
+@jit(nopython=True)
+def test_calculate_jit(count_num):
+    g_search_list = list(range(count_num * 10000))
+    sum = 0
+    for i in range(count_num * 10000):
+        sum += pow(3 * 2, 3 * 2) if i in g_search_list else 0
+    return sum
+
+
+# @staticmethod
+def test_calculate_no_jit(count_num):
+    g_search_list = list(range(count_num * 10000))
+    sum = 0
+    for i in range(count_num * 10000):
+        sum += pow(3 * 2, 3 * 2) if i in g_search_list else 0
+    return sum
 
 
 def create_app(
@@ -894,5 +916,31 @@ def create_app(
                 "Make sure you've set the appropriate Accept "
                 "header.",
             )
+
+    @app.post("stress_test/cpu_busy_numba")
+    def test_numba(request):
+        num = request.json.get("num")
+        tt = datetime.datetime.now()
+        test_calculate_no_jit(num)
+        time_diff1 = datetime.datetime.now() - tt
+        logger.info('foo no jit Time used: {} sec'.format(time_diff1))
+        tt = datetime.datetime.now()
+        test_calculate_jit(num)
+        time_diff2 = datetime.datetime.now() - tt
+        cost_size = time_diff1 / time_diff2
+        logger.info('foo_jit Time used: {} sec'.format(time_diff2))
+        logger.info('foo Time is foo_jit used: size {} '.format(cost_size))
+
+        return response.json(cost_size)
+
+    @app.post("stress_test/io_busy")
+    def stress_test_null(request, pk=None):
+        start_time0 = datetime.datetime.now()
+        sleep_time = request.json.get("sleep_time_ms", 0)
+        if sleep_time and sleep_time > 0:
+            time.sleep(sleep_time / 1000.0)
+        cost_time = (datetime.datetime.now() - start_time0).total_seconds() * 1000
+
+        return response.json(cost_time)
 
     return app
