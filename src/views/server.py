@@ -810,6 +810,35 @@ def create_app(
                 500, "ParsingError", "An unexpected error occurred. Error: {}".format(e)
             )
 
+    @app.post("/model/handle_text")
+    @requires_auth(app, auth_token)
+    async def handle_text(request: Request):
+        validate_request_body(
+            request,
+            "No text message defined in request_body. Add text message to request body "
+            "in order to obtain the intent and extracted entities.",
+        )
+        # emulation_mode = request.args.get("emulation_mode")
+        # emulator = _create_emulator(emulation_mode)
+
+        try:
+            # data = emulator.normalise_request_json(request.json)
+            # parse_data = await app.agent.interpreter.parse(data.get("text"))
+            # response_data = emulator.normalise_response_json(parse_data)
+            text = request.json.get("text")
+            sender_id = request.json.get("sender_id")
+
+            responses = await app.agent.handle_text(text_message=text,sender_id=sender_id)
+
+            return response.json(responses[0])
+
+        except Exception as e:
+            logger.debug(traceback.format_exc())
+            raise ErrorResponse(
+                500, "ParsingError", "An unexpected error occurred. Error: {}".format(e)
+            )
+
+
     @app.put("/model")
     @requires_auth(app, auth_token)
     async def load_model(request: Request):

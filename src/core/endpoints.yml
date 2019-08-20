@@ -24,13 +24,13 @@ action_endpoint:
 #    db: <number of your database within redis, e.g. 0>
 #    password: <password used for authentication>
 
-tracker_store:
-    type: mongod
-    url: mongodb://114.55.58.215:27017
-    db: rasa
-    username: airobot
-    password: Unsd879h
-    auth_source: admin
+#tracker_store:
+#    type: mongod
+#    url: mongodb://xxx:27017
+#    db: rasa
+#    username: xxx
+#    password: xxx
+#    auth_source: admin
 
 # Event broker which all conversation events should be streamed to.
 # https://rasa.com/docs/rasa/api/event-brokers/
