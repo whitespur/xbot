@@ -24,6 +24,7 @@ action_endpoint:
 #    db: <number of your database within redis, e.g. 0>
 #    password: <password used for authentication>
 
+# 改成自己的mongo配置,也可以注释掉使用内存store
 #tracker_store:
 #    type: mongod
 #    url: mongodb://xxx:27017

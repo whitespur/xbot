@@ -6,6 +6,7 @@ from functools import wraps
 from inspect import isawaitable
 from typing import Any, Callable, List, Optional, Text, Union
 
+import datetime
 from sanic import Sanic, response
 from sanic.request import Request
 from sanic_cors import CORS
@@ -281,11 +282,13 @@ def create_app(
     jwt_secret: Optional[Text] = None,
     jwt_method: Text = "HS256",
     endpoints: Optional[AvailableEndpoints] = None,
+    base_dir:Optional[Text] = None,
 ):
     """Class representing a Rasa HTTP server."""
 
     app = Sanic(__name__)
     app.config.RESPONSE_TIMEOUT = 60 * 60
+    app.base_dir = base_dir
 
     CORS(
         app, resources={r"/*": {"origins": cors_origins or ""}}, automatic_options=True
@@ -584,47 +587,44 @@ def create_app(
     @app.post("/model/train")
     @requires_auth(app, auth_token)
     async def train(request: Request):
+        start_time = datetime.datetime.now()
         """Train a Rasa Model."""
         from rasa.train import train_async
 
-        validate_request_body(
-            request,
-            "You must provide training data in the request body in order to "
-            "train your model.",
-        )
+        # validate_request_body(
+        #     request,
+        #     "You must provide training data in the request body in order to "
+        #     "train your model.",
+        # )
 
         rjs = request.json
-        validate_request(rjs)
+        logging.info("train rjs is {}".format(rjs))
+        # validate_request(rjs)
 
         # create a temporary directory to store config, domain and
         # training data
-        temp_dir = tempfile.mkdtemp()
+        temp_dir = app.base_dir+"/core/data/"
+        # TODO 根据robot_id区分不同的机器人和数据存储路径
+        robot_id = rjs.get("robot_id")
 
-        config_path = os.path.join(temp_dir, "config.yml")
-        dump_obj_as_str_to_file(config_path, rjs["config"])
-
-        if "nlu" in rjs:
-            nlu_path = os.path.join(temp_dir, "nlu.md")
-            dump_obj_as_str_to_file(nlu_path, rjs["nlu"])
-
-        if "stories" in rjs:
-            stories_path = os.path.join(temp_dir, "stories.md")
-            dump_obj_as_str_to_file(stories_path, rjs["stories"])
-
-        domain_path = DEFAULT_DOMAIN_PATH
-        if "domain" in rjs:
-            domain_path = os.path.join(temp_dir, "domain.yml")
-            dump_obj_as_str_to_file(domain_path, rjs["domain"])
+        domain_path = app.base_dir+"/core/domain.yml"
+        config_path = app.base_dir+"/core/config.yml"
+        output_path = app.base_dir + "/core/models/"
 
         try:
             model_path = await train_async(
                 domain=domain_path,
                 config=config_path,
                 training_files=temp_dir,
-                output_path=rjs.get("out", DEFAULT_MODELS_PATH),
+                output_path=output_path,
                 force_training=rjs.get("force", False),
             )
-            return await response.file(model_path)
+            cost_time = (datetime.datetime.now() - start_time).total_seconds() * 1000
+            return response.json(
+                {
+                    "model_path": model_path,
+                    "cost_time": cost_time,
+                })
         except InvalidDomain as e:
             raise ErrorResponse(
                 400,
@@ -789,6 +789,7 @@ def create_app(
     @app.post("/model/parse")
     @requires_auth(app, auth_token)
     async def parse(request: Request):
+        start_time = datetime.datetime.now()
         validate_request_body(
             request,
             "No text message defined in request_body. Add text message to request body "
@@ -801,8 +802,12 @@ def create_app(
             data = emulator.normalise_request_json(request.json)
             parse_data = await app.agent.interpreter.parse(data.get("text"))
             response_data = emulator.normalise_response_json(parse_data)
-
-            return response.json(response_data)
+            cost_time = (datetime.datetime.now() - start_time).total_seconds() * 1000
+            return response.json(
+                {
+                    "response_data": response_data,
+                    "cost_time": cost_time
+                })
 
         except Exception as e:
             logger.debug(traceback.format_exc())
@@ -813,31 +818,29 @@ def create_app(
     @app.post("/model/handle_text")
     @requires_auth(app, auth_token)
     async def handle_text(request: Request):
+        start_time = datetime.datetime.now()
         validate_request_body(
             request,
             "No text message defined in request_body. Add text message to request body "
             "in order to obtain the intent and extracted entities.",
         )
-        # emulation_mode = request.args.get("emulation_mode")
-        # emulator = _create_emulator(emulation_mode)
-
         try:
-            # data = emulator.normalise_request_json(request.json)
-            # parse_data = await app.agent.interpreter.parse(data.get("text"))
-            # response_data = emulator.normalise_response_json(parse_data)
             text = request.json.get("text")
             sender_id = request.json.get("sender_id")
 
             responses = await app.agent.handle_text(text_message=text,sender_id=sender_id)
-
-            return response.json(responses[0])
+            cost_time = (datetime.datetime.now() - start_time).total_seconds() * 1000
+            return response.json(
+                {
+                    "response_data": responses[0],
+                    "cost_time": cost_time
+                })
 
         except Exception as e:
             logger.debug(traceback.format_exc())
             raise ErrorResponse(
                 500, "ParsingError", "An unexpected error occurred. Error: {}".format(e)
             )
-
 
     @app.put("/model")
     @requires_auth(app, auth_token)

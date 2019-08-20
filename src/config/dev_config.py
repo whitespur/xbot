@@ -6,7 +6,7 @@ from .config import Config
 
 class DevConfig(Config):
     # Application config
-    DEBUG = True
+    DEBUG = False
     AUTH = {
         "Api-Key": os.getenv('OWLLOOK_API_KEY', "1167c19cd0546a82fbc534f5e93423d5")
     }

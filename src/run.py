@@ -11,6 +11,7 @@ from rasa.model import get_model
 from sanic import Sanic
 from sanic_cors import CORS
 
+from src.config import load_config
 from src.views import server
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -23,6 +24,7 @@ from src.views import api_bp, html_bp, json_bp
 # app.blueprint(json_bp)
 
 # TODO 从配置文件获取配置
+CONFIG = load_config()
 BASE_CORE_PATH = "core/"
 enable_api = True
 cors = None
@@ -38,7 +40,8 @@ _endpoints = AvailableEndpoints.read_endpoints(endpoints)
 port = DEFAULT_RASA_PORT
 
 # model = get_validated_path(BASE_CORE_PATH+"models/", "model", DEFAULT_MODELS_PATH)
-model_path = BASE_CORE_PATH+"models/"
+# model_path = BASE_CORE_PATH+"models/"
+model_path = CONFIG.BASE_MODEL_DIR
 
 if __name__ == "__main__":
 
@@ -54,6 +57,7 @@ if __name__ == "__main__":
             jwt_secret=jwt_secret,
             jwt_method=jwt_method,
             endpoints=endpoints,
+            base_dir=CONFIG.BASE_DIR
         )
     else:
         app = Sanic(__name__, configure_logging=False)
