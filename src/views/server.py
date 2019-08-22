@@ -918,7 +918,7 @@ def create_app(
             )
 
     @app.post("stress_test/cpu_busy_numba")
-    def test_numba(request):
+    async def test_numba(request):
         num = request.json.get("num")
         tt = datetime.datetime.now()
         test_calculate_no_jit(num)
@@ -934,7 +934,7 @@ def create_app(
         return response.json(cost_size)
 
     @app.post("stress_test/io_busy")
-    def stress_test_null(request, pk=None):
+    async def stress_test_null(request):
         start_time0 = datetime.datetime.now()
         sleep_time = request.json.get("sleep_time_ms", 0)
         if sleep_time and sleep_time > 0:

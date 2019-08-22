@@ -1,5 +1,5 @@
 # gunicorn -c config/gunicorn.py --worker-class sanic.worker.GunicornWorker server:app
-bind = '127.0.0.1:8001'
+bind = '127.0.0.1:5005'
 backlog = 2048
 
 workers = 2

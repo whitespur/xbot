@@ -11,11 +11,11 @@ from rasa.model import get_model
 from sanic import Sanic
 from sanic_cors import CORS
 
-from src.config import load_config
-from src.views import server
+from config import load_config
+from views import server
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from src.views import api_bp, html_bp, json_bp
+# from src.views import api_bp, html_bp, json_bp
 
 # app = Sanic(__name__)
 
@@ -49,25 +49,25 @@ if __name__ == "__main__":
         print(
             "No model found. Train a model before running the server"
         )
-
-    if enable_api:
-        app = server.create_app(
-            cors_origins=cors,
-            auth_token=auth_token,
-            jwt_secret=jwt_secret,
-            jwt_method=jwt_method,
-            endpoints=endpoints,
-            base_dir=CONFIG.BASE_DIR
-        )
-    else:
-        app = Sanic(__name__, configure_logging=False)
-        CORS(app, resources={r"/*": {"origins": cors or ""}}, automatic_options=True)
+    app = server.create_app(
+        cors_origins=cors,
+        auth_token=auth_token,
+        jwt_secret=jwt_secret,
+        jwt_method=jwt_method,
+        endpoints=endpoints,
+        base_dir=CONFIG.BASE_DIR
+    )
+    # if enable_api:
+    #
+    # else:
+    #     app = Sanic(__name__, configure_logging=False)
+    #     CORS(app, resources={r"/*": {"origins": cors or ""}}, automatic_options=True)
 
     app.register_listener(
         partial(load_agent_on_start, model_path, _endpoints, remote_storage),
         "before_server_start",
     )
-    app.blueprint(api_bp)
-    app.blueprint(html_bp)
-    app.blueprint(json_bp)
+    # app.blueprint(api_bp)
+    # app.blueprint(html_bp)
+    # app.blueprint(json_bp)
     app.run(host="0.0.0.0", port=port)
