@@ -10,7 +10,7 @@ asyncio_redis==0.15.1
 aioredis==1.2.0
 ujson==1.35
 uvloop==0.12.2
-Jinja2==2.10.1
+Jinja2==2.11.3
 aiomysql==0.0.20
 locustio==0.11.0
 motor==2.0.0
